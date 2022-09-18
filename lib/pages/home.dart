@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:nabos_mtg/app_controller.dart';
+import 'package:nabos_mtg/widgets/menu/menu_persons_widget.dart';
 import 'package:nabos_mtg/widgets/menu_button_widget.dart';
 import 'package:nabos_mtg/widgets/menu_widget.dart';
 import 'package:nabos_mtg/widgets/player_widget.dart';
@@ -15,6 +16,29 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   int counter = 0;
+  bool menuAnimationEnd = false;
+  List keys = List.generate(
+      AppController.istance.numberOfPlayers, (index) => GlobalKey());
+
+  changeNumberOfKeys(int number) {
+    keys = List.generate(number, (index) => GlobalKey());
+  }
+
+  getMenuActivated(String menuName) {
+    switch (menuName) {
+      case 'person':
+        return MenuPersonWidget(
+            onChangePersons: (number) => changeNumberOfKeys(number));
+      case 'none':
+        return Menu(
+          onReset: () => keys.forEach((element) {
+            element.currentState.resetLife();
+          }),
+        );
+      default:
+        return null;
+    }
+  }
 
   listOfPlayers(int players) {
     int length = ((players / 2).floor()) + (players % 2);
@@ -29,6 +53,7 @@ class HomePageState extends State<HomePage> {
               width: width,
               height: heigth / 2,
               rotation: getRotationByIndex(players, 0),
+              playerNumber: 0,
             )
           ])
         ]),
@@ -38,6 +63,7 @@ class HomePageState extends State<HomePage> {
               width: width,
               height: heigth / 2,
               rotation: getRotationByIndex(players, 1),
+              playerNumber: 1,
             )
           ])
         ]),
@@ -59,9 +85,11 @@ class HomePageState extends State<HomePage> {
         index++;
         return Column(children: [
           PlayerWidget(
+            key: keys[index - 1],
             width: subwidth,
             height: subheigth,
             rotation: getRotationByIndex(players, index - 1),
+            playerNumber: index - 1,
           )
         ]);
       });
@@ -118,8 +146,15 @@ class HomePageState extends State<HomePage> {
                       60
                   : MediaQuery.of(context).size.height / listToRender.length,
               child: AnimatedContainer(
+                onEnd: () => {
+                  setState(() {
+                    menuAnimationEnd = true;
+                  })
+                },
                 duration: Duration(milliseconds: 300),
-                child: AppController.istance.menuOpened ? Menu() : null,
+                child: AppController.istance.menuOpened && this.menuAnimationEnd
+                    ? getMenuActivated(AppController.istance.menuSelected)
+                    : null,
                 width: MediaQuery.of(context).size.width,
                 height: AppController.istance.menuOpened ? 80 : 0,
                 decoration: BoxDecoration(color: Colors.black),
